@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import UIKit
+
 
 struct ContentView: View {
     @State private var startTime = Calendar.current.date(bySettingHour: 7, minute: 45, second: 0, of: Date()) ?? Date()
@@ -40,7 +42,7 @@ struct InfoView: View {
                 Image("ScheduleGeneratorLogo") // Replace with your actual image asset name
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 250) // Adjust height as needed
+                    .frame(height: 150) // Adjust height as needed
                 Text("Welcome to the Dynamic Schedule Generator")
                     .font(.largeTitle)
                     .padding()
@@ -66,11 +68,10 @@ struct GenerateScheduleView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Spacer()
                 Image("ScheduleGeneratorLogo") // Replace with your actual image asset name
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 250) // Adjust height as needed
+                    .frame(height: 150) // Adjust height as needed
                 DatePicker("Start Time", selection: $startTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 DatePicker("End Time", selection: $endTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 Stepper(value: $numEvents, in: 0...10) {
@@ -117,6 +118,7 @@ struct GenerateScheduleView: View {
         }
     }
 
+
     func timeRange() -> ClosedRange<Date> {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
@@ -154,7 +156,7 @@ struct GenerateScheduleView: View {
         // Check if the set events exceed the total available time
         guard totalSetTimesDuration <= durationMilliseconds else {
             print("Error: The set events exceed the total available time.")
-            return ""
+            return "Error: The set events exceed the total available time."
         }
 
         let remainingScheduleTime = durationMilliseconds - totalSetTimesDuration
@@ -230,8 +232,6 @@ struct GenerateScheduleView: View {
     }
 }
 
-
-
 struct ScheduleView: View {
     @Binding var schedule: String
     @State private var showShareSheet = false
@@ -274,3 +274,4 @@ struct ActivityView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+
