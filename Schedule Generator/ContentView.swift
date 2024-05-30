@@ -8,13 +8,19 @@
 import SwiftUI
 import UIKit
 
+@main
+struct Schedule_GeneratorApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+
 struct ContentView: View {
-    @State private var startTime = Calendar.current.date(bySettingHour: 7, minute: 45, second: 0, of: Date()) ?? Date()
-    @State private var endTime = Calendar.current.date(bySettingHour: 14, minute: 30, second: 0, of: Date()) ?? Date()
-    @State private var numEvents = 1
-    @State private var setEvents: [(String, Date, Date)] = []
-    @State private var schedule: String = ""
+    @StateObject private var scheduleManager = ScheduleManager()
     @State private var selectedTab = 0
+    @State private var schedule: String = ""
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -24,17 +30,26 @@ struct ContentView: View {
                 }
                 .tag(0)
 
-            ScheduleInputView(startTime: $startTime, endTime: $endTime, numEvents: $numEvents, setEvents: $setEvents, schedule: $schedule, selectedTab: $selectedTab)
+            ScheduleInputView(selectedTab: $selectedTab, schedule: $schedule)
+                .environmentObject(scheduleManager)
                 .tabItem {
                     Label("Schedule Input", systemImage: "calendar")
                 }
                 .tag(1)
 
             GeneratedScheduleView(schedule: $schedule)
+                .environmentObject(scheduleManager)
                 .tabItem {
                     Label("Generated Schedule", systemImage: "list.bullet")
                 }
                 .tag(2)
+
+            SavedSchedulesView()
+                .environmentObject(scheduleManager)
+                .tabItem {
+                    Label("Saved Schedules", systemImage: "folder")
+                }
+                .tag(3)
         }
     }
 }
@@ -43,15 +58,15 @@ struct InfoView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Image("ScheduleGeneratorLogo") // Replace with your actual image asset name
+                Image("ScheduleGeneratorLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 150) // Adjust height as needed
+                    .frame(height: 150)
                 Text("Schedule Generator")
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .padding()
-                Divider() // Horizontal line
+                Divider()
                 (Text("This app helps you to create an alternate schedule by setting the schedule start and end times, and specifying the number of equal classes you would like to generate. \n\nYou can also add preset events with specific times like lunch and elective.\n\nSpecify your schedule needs on the") + Text(" Schedule Input").bold() + Text(" tab and then view your schedule on the") + Text(" Generated Schedule").bold() + Text(" tab."))
                     .padding()
                 Spacer()
@@ -63,30 +78,33 @@ struct InfoView: View {
 }
 
 struct ScheduleInputView: View {
-    @Binding var startTime: Date
-    @Binding var endTime: Date
-    @Binding var numEvents: Int
-    @Binding var setEvents: [(String, Date, Date)]
-    @Binding var schedule: String
+    @State private var startTime = Calendar.current.date(bySettingHour: 7, minute: 45, second: 0, of: Date()) ?? Date()
+    @State private var endTime = Calendar.current.date(bySettingHour: 14, minute: 30, second: 0, of: Date()) ?? Date()
+    @State private var numEvents = 1
+    @State private var setEvents: [(String, Date, Date)] = []
     @Binding var selectedTab: Int
+    @Binding var schedule: String
 
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Image("ScheduleGeneratorLogo") // Replace with your actual image asset name
+                Image("ScheduleGeneratorLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(height: 150) // Adjust height as needed
-                
+                    .frame(height: 150)
+
                 DatePicker("Start Time", selection: $startTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 DatePicker("End Time", selection: $endTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 Stepper(value: $numEvents, in: 0...10) {
                     Text("Number of Equal Classes: \(numEvents)")
                 }
-                Divider() // Horizontal line
+
+                Divider()
+
                 Text("Pre-Set Events")
-                    .font(.headline) // Make the label stand out
-                VStack(alignment: .leading, spacing: 10) { // Adjust spacing as needed
+                    .font(.headline)
+
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("Event Name").frame(width: 100, alignment: .leading)
                         Text("Start Time").frame(width: 100, alignment: .leading)
@@ -109,18 +127,20 @@ struct ScheduleInputView: View {
                 Button(action: {
                     setEvents.append(("", Date(), Date()))
                 }) {
-                    Text("Add Set Event")
+                    Text("Add Pre-Set Event")
                 }
+
                 Button(action: {
                     schedule = BuildSchedule(startTime: startTime, endTime: endTime, numEvents: numEvents, setEvents: setEvents)
                     selectedTab = 2 // Navigate to the Generated Schedule tab
                 }) {
                     Text("Submit")
                 }
+
                 Spacer()
             }
             .padding()
-            .navigationBarTitle("Schedule Input", displayMode: .inline)// Set the title here
+            .navigationBarTitle("Schedule Input", displayMode: .inline)
         }
     }
 
@@ -220,26 +240,27 @@ struct ScheduleInputView: View {
         return shareMessage
     }
 
-    func formatDuration(_ duration: TimeInterval) -> String {
-        let durationInMinutes = Int(duration / 60000)
-        let hours = durationInMinutes / 60
-        let minutes = durationInMinutes % 60
-        return String(format: "%dh %dm", hours, minutes)
-    }
+    private func formatDuration(_ milliseconds: TimeInterval) -> String {
+        let durationSeconds = milliseconds / 1000
+        let durationMinutes = durationSeconds / 60
+        let hours = Int(durationMinutes / 60)
+        let minutes = Int(durationMinutes.truncatingRemainder(dividingBy: 60))
 
-    struct Utilities {
-        static func formatDate(_ date: Date, _ format: String) -> String {
-            let dateFormatter = DateFormatter()
-            dateFormatter.timeZone = TimeZone.current // Use current time zone
-            dateFormatter.dateFormat = format
-            return dateFormatter.string(from: date)
+        if hours > 0 {
+            return String(format: "%dh %02dm", hours, minutes)
+        } else {
+            return String(format: "%dm", minutes)
         }
     }
 }
 
 struct GeneratedScheduleView: View {
+    @EnvironmentObject var scheduleManager: ScheduleManager
     @Binding var schedule: String
     @State private var showShareSheet = false
+    @State private var scheduleName = ""
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         GeometryReader { geometry in
@@ -249,6 +270,11 @@ struct GeneratedScheduleView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(height: min(geometry.size.width * 0.4, 150)) // Adjust height based on available width
                 Divider() // Horizontal line
+
+                TextField("Schedule Name", text: $scheduleName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+
                 ScrollView {
                     Text(schedule)
                         .padding()
@@ -263,22 +289,104 @@ struct GeneratedScheduleView: View {
                 .sheet(isPresented: $showShareSheet) {
                     ActivityView(activityItems: [schedule])
                 }
+
+                Button(action: {
+                    if scheduleName.isEmpty {
+                        alertMessage = "Please enter a schedule name."
+                        showAlert = true
+                    } else {
+                        let newSchedule = Schedule(name: scheduleName, startTime: Date(), endTime: Date(), numEvents: 0, setEvents: [], generatedSchedule: schedule) // Update with actual times and events
+                        scheduleManager.addSchedule(newSchedule)
+                        alertMessage = "Schedule saved successfully!"
+                        showAlert = true
+                    }
+                }) {
+                    Text("Save Schedule")
+                }
+                .padding()
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Save Schedule"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
+
+                Spacer()
             }
             .padding()
         }
     }
 }
 
-struct ActivityView: UIViewControllerRepresentable {
-    let activityItems: [Any]
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+struct SavedSchedulesView: View {
+    @EnvironmentObject var scheduleManager: ScheduleManager
+
+    var body: some View {
+        NavigationView {
+            VStack {
+                List {
+                    ForEach(scheduleManager.schedules) { schedule in
+                        VStack(alignment: .leading) {
+                            Text(schedule.name)
+                                .font(.headline)
+                            Text(schedule.generatedSchedule)
+                                .font(.subheadline)
+                        }
+                    }
+                    .onDelete(perform: deleteSchedule)
+                }
+                .navigationTitle("Saved Schedules")
+                .navigationBarItems(trailing: EditButton())
+            }
+        }
+    }
+
+    private func deleteSchedule(at offsets: IndexSet) {
+        scheduleManager.schedules.remove(atOffsets: offsets)
+    }
+}
+
+
+import Foundation
+
+class ScheduleManager: ObservableObject {
+    @Published var schedules: [Schedule] = []
+
+    func addSchedule(_ schedule: Schedule) {
+        schedules.append(schedule)
+    }
+}
+
+struct Schedule: Identifiable {
+    let id = UUID()
+    var name: String
+    var startTime: Date
+    var endTime: Date
+    var numEvents: Int
+    var setEvents: [(String, Date, Date)]
+    var generatedSchedule: String
+}
+
+
+struct ActivityView: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ActivityView>) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: UIViewControllerRepresentableContext<ActivityView>) {}
 }
+
+
+struct Utilities {
+    static func formatDate(_ date: Date, _ format: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        return formatter.string(from: date)
+    }
+}
+
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
