@@ -67,7 +67,7 @@ struct InfoView: View {
                     .multilineTextAlignment(.center)
                     .padding()
                 Divider()
-                (Text("This app helps you to create an alternate schedule by setting the schedule start and end times, and specifying the number of equal classes you would like to generate. \n\nYou can also add preset events with specific times like lunch and elective.\n\nSpecify your schedule needs on the") + Text(" Schedule Input").bold() + Text(" tab and then view your schedule on the") + Text(" Generated Schedule").bold() + Text(" tab."))
+                (Text("This app helps you to create an alternate schedule by setting the schedule start and end times, and specifying the number of equal classes you would like to generate. \n\nYou can also add pre-set events with specific times like lunch and elective.\n\nSpecify your schedule needs on the") + Text(" Schedule Input").bold() + Text(" tab and then view your schedule on the") + Text(" Generated Schedule").bold() + Text(" tab."))
                     .padding()
                 Spacer()
             }
@@ -82,6 +82,7 @@ struct ScheduleInputView: View {
     @State private var endTime = Calendar.current.date(bySettingHour: 14, minute: 30, second: 0, of: Date()) ?? Date()
     @State private var numEvents = 1
     @State private var setEvents: [(String, Date, Date)] = []
+    @State private var transitionTime: Int = 0 // New state variable for transition time
     @Binding var selectedTab: Int
     @Binding var schedule: String
 
@@ -97,6 +98,9 @@ struct ScheduleInputView: View {
                 DatePicker("End Time", selection: $endTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 Stepper(value: $numEvents, in: 0...10) {
                     Text("Number of Equal Classes: \(numEvents)")
+                }
+                Stepper(value: $transitionTime, in: 0...30) { // Stepper for transition time
+                    Text("Transition Time: \(transitionTime) minutes")
                 }
 
                 Divider()
@@ -131,7 +135,7 @@ struct ScheduleInputView: View {
                 }
 
                 Button(action: {
-                    schedule = BuildSchedule(startTime: startTime, endTime: endTime, numEvents: numEvents, setEvents: setEvents)
+                    schedule = BuildSchedule(startTime: startTime, endTime: endTime, numEvents: numEvents, setEvents: setEvents, transitionTime: transitionTime)
                     selectedTab = 2 // Navigate to the Generated Schedule tab
                 }) {
                     Text("Submit")
@@ -162,8 +166,9 @@ struct ScheduleInputView: View {
         var isContinued: Bool
     }
 
-    func BuildSchedule(startTime: Date, endTime: Date, numEvents: Int, setEvents: [(String, Date, Date)]) -> String {
+    func BuildSchedule(startTime: Date, endTime: Date, numEvents: Int, setEvents: [(String, Date, Date)], transitionTime: Int) -> String {
         let durationMilliseconds = endTime.timeIntervalSince(startTime) * 1000
+        let transitionTimeMilliseconds = TimeInterval(transitionTime * 60 * 1000)
 
         var events: [Event] = setEvents.compactMap { row in
             let (constantName, constantStart, constantEnd) = row
@@ -184,7 +189,8 @@ struct ScheduleInputView: View {
             return "Error: The set events exceed the total available time."
         }
 
-        let remainingScheduleTime = durationMilliseconds - totalSetTimesDuration
+        let totalTransitionTime = transitionTimeMilliseconds * TimeInterval(numEvents + setEvents.count - 1)
+        let remainingScheduleTime = durationMilliseconds - totalSetTimesDuration - totalTransitionTime
         let originalDynamicClassDuration = remainingScheduleTime / TimeInterval(numEvents)
         var totalDynamicClassesDuration = originalDynamicClassDuration
 
@@ -221,7 +227,7 @@ struct ScheduleInputView: View {
             }
 
             events.append(Event(name: name, isSet: isSet, start: start, end: end, duration: duration, remainingTime: remainingScheduleTime, isContinued: isContinued))
-            lastDynamicClassEndTime = end
+            lastDynamicClassEndTime = end.addingTimeInterval(transitionTimeMilliseconds / 1000) // Add transition time
 
             if dynamicEvents.count < numEvents {
                 rotationIndex += 1
@@ -253,6 +259,7 @@ struct ScheduleInputView: View {
         }
     }
 }
+
 
 struct GeneratedScheduleView: View {
     @EnvironmentObject var scheduleManager: ScheduleManager
