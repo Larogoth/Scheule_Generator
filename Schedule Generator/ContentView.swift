@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Schedule Generator
+//  iSchedulED
 //
 //  Created by Bret May on 5/28/24.
 //
@@ -116,14 +116,17 @@ struct ScheduleInputView: View {
                         Spacer()
                     }
                     ForEach(Array(setEvents.enumerated()), id: \.element.1) { index, event in
-                        HStack {
-                            TextField("Event Name", text: $setEvents[index].0).frame(width: 100, alignment: .leading)
-                            DatePicker("", selection: $setEvents[index].1, displayedComponents: .hourAndMinute).frame(width: 100, alignment: .leading)
-                            DatePicker("", selection: $setEvents[index].2, displayedComponents: .hourAndMinute).frame(width: 100, alignment: .leading)
-                            Button(action: {
-                                setEvents.remove(at: index)
-                            }) {
-                                Text("Remove")
+                        GeometryReader { geometry in
+                            HStack {
+                                TextField("Event Name", text: $setEvents[index].0).frame(width: geometry.size.width * 0.25, alignment: .leading)
+                                DatePicker("", selection: $setEvents[index].1, displayedComponents: .hourAndMinute).frame(width: geometry.size.width * 0.25, alignment: .leading)
+                                DatePicker("", selection: $setEvents[index].2, displayedComponents: .hourAndMinute).frame(width: geometry.size.width * 0.25, alignment: .leading)
+                                Button(action: {
+                                    setEvents.remove(at: index)
+                                }) {
+                                    Text("Remove")
+                                }
+                                .frame(width: geometry.size.width * 0.25, alignment: .leading)
                             }
                         }
                     }
@@ -261,6 +264,7 @@ struct ScheduleInputView: View {
 }
 
 
+
 struct GeneratedScheduleView: View {
     @EnvironmentObject var scheduleManager: ScheduleManager
     @Binding var schedule: String
@@ -325,17 +329,16 @@ struct GeneratedScheduleView: View {
 
 struct SavedSchedulesView: View {
     @EnvironmentObject var scheduleManager: ScheduleManager
+    @State private var searchText = ""
 
     var body: some View {
         NavigationView {
             VStack {
+                SearchBar(text: $searchText)
                 List {
-                    ForEach(scheduleManager.schedules) { schedule in
-                        VStack(alignment: .leading) {
+                    ForEach(filteredSchedules) { schedule in
+                        NavigationLink(destination: ScheduleDetailView(schedule: schedule)) {
                             Text(schedule.name)
-                                .font(.headline)
-                            Text(schedule.generatedSchedule)
-                                .font(.subheadline)
                         }
                     }
                     .onDelete(perform: deleteSchedule)
@@ -346,10 +349,80 @@ struct SavedSchedulesView: View {
         }
     }
 
+    private var filteredSchedules: [Schedule] {
+        if searchText.isEmpty {
+            return scheduleManager.schedules
+        } else {
+            return scheduleManager.schedules.filter { $0.name.lowercased().contains(searchText.lowercased()) }
+        }
+    }
+
     private func deleteSchedule(at offsets: IndexSet) {
         scheduleManager.schedules.remove(atOffsets: offsets)
     }
 }
+
+struct SearchBar: UIViewRepresentable {
+    @Binding var text: String
+
+    class Coordinator: NSObject, UISearchBarDelegate {
+        @Binding var text: String
+
+        init(text: Binding<String>) {
+            _text = text
+        }
+
+        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+            text = searchText
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        return Coordinator(text: $text)
+    }
+
+    func makeUIView(context: UIViewRepresentableContext<SearchBar>) -> UISearchBar {
+        let searchBar = UISearchBar(frame: .zero)
+        searchBar.delegate = context.coordinator
+        return searchBar
+    }
+
+    func updateUIView(_ uiView: UISearchBar, context: UIViewRepresentableContext<SearchBar>) {
+        uiView.text = text
+    }
+}
+
+
+struct ScheduleDetailView: View {
+    var schedule: Schedule
+    @State private var showShareSheet = false
+
+    var body: some View {
+        VStack {
+            Text(schedule.name)
+                .font(.largeTitle)
+                .padding()
+            ScrollView {
+                Text(schedule.generatedSchedule)
+                    .padding()
+                    .multilineTextAlignment(.leading)
+            }
+            Button(action: {
+                showShareSheet = true
+            }) {
+                Text("Share")
+            }
+            .padding()
+            .sheet(isPresented: $showShareSheet) {
+                ActivityView(activityItems: [schedule.generatedSchedule])
+            }
+            Spacer()
+        }
+        .padding()
+        .navigationTitle("Schedule Details")
+    }
+}
+
 
 
 import Foundation
