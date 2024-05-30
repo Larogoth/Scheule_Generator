@@ -8,29 +8,33 @@
 import SwiftUI
 import UIKit
 
-
 struct ContentView: View {
     @State private var startTime = Calendar.current.date(bySettingHour: 7, minute: 45, second: 0, of: Date()) ?? Date()
     @State private var endTime = Calendar.current.date(bySettingHour: 14, minute: 30, second: 0, of: Date()) ?? Date()
     @State private var numEvents = 1
     @State private var setEvents: [(String, Date, Date)] = []
     @State private var schedule: String = ""
-    @State private var showScheduleView = false
+    @State private var selectedTab = 0
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             InfoView()
                 .tabItem {
                     Label("Info", systemImage: "info.circle")
                 }
+                .tag(0)
 
-            GenerateScheduleView(startTime: $startTime, endTime: $endTime, numEvents: $numEvents, setEvents: $setEvents, schedule: $schedule, showScheduleView: $showScheduleView)
+            ScheduleInputView(startTime: $startTime, endTime: $endTime, numEvents: $numEvents, setEvents: $setEvents, schedule: $schedule, selectedTab: $selectedTab)
                 .tabItem {
-                    Label("Generate Schedule", systemImage: "calendar")
+                    Label("Schedule Input", systemImage: "calendar")
                 }
-        }
-        .sheet(isPresented: $showScheduleView) {
-            ScheduleView(schedule: $schedule)
+                .tag(1)
+
+            GeneratedScheduleView(schedule: $schedule)
+                .tabItem {
+                    Label("Generated Schedule", systemImage: "list.bullet")
+                }
+                .tag(2)
         }
     }
 }
@@ -43,11 +47,12 @@ struct InfoView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 150) // Adjust height as needed
-                Text("Welcome to the Dynamic Schedule Generator")
+                Text("Schedule Generator")
                     .font(.largeTitle)
+                    .multilineTextAlignment(.center)
                     .padding()
                 Divider() // Horizontal line
-                Text("This app helps you create an alternate schedule by setting the schedule start and end times, and specifying the number of equal classes you would like to generate. \n\nYou can also add preset events with specific times like lunch and elective.")
+                (Text("This app helps you to create an alternate schedule by setting the schedule start and end times, and specifying the number of equal classes you would like to generate. \n\nYou can also add preset events with specific times like lunch and elective.\n\nSpecify your schedule needs on the") + Text(" Schedule Input").bold() + Text(" tab and then view your schedule on the") + Text(" Generated Schedule").bold() + Text(" tab."))
                     .padding()
                 Spacer()
             }
@@ -57,13 +62,13 @@ struct InfoView: View {
     }
 }
 
-struct GenerateScheduleView: View {
+struct ScheduleInputView: View {
     @Binding var startTime: Date
     @Binding var endTime: Date
     @Binding var numEvents: Int
     @Binding var setEvents: [(String, Date, Date)]
     @Binding var schedule: String
-    @Binding var showScheduleView: Bool
+    @Binding var selectedTab: Int
 
     var body: some View {
         NavigationView {
@@ -72,6 +77,7 @@ struct GenerateScheduleView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 150) // Adjust height as needed
+                
                 DatePicker("Start Time", selection: $startTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 DatePicker("End Time", selection: $endTime, in: timeRange(), displayedComponents: .hourAndMinute)
                 Stepper(value: $numEvents, in: 0...10) {
@@ -107,17 +113,16 @@ struct GenerateScheduleView: View {
                 }
                 Button(action: {
                     schedule = BuildSchedule(startTime: startTime, endTime: endTime, numEvents: numEvents, setEvents: setEvents)
-                    showScheduleView = true
+                    selectedTab = 2 // Navigate to the Generated Schedule tab
                 }) {
                     Text("Submit")
                 }
                 Spacer()
             }
             .padding()
-            .navigationBarTitle("Generate Schedule", displayMode: .inline)// Set the title here
+            .navigationBarTitle("Schedule Input", displayMode: .inline)// Set the title here
         }
     }
-
 
     func timeRange() -> ClosedRange<Date> {
         let calendar = Calendar.current
@@ -232,7 +237,7 @@ struct GenerateScheduleView: View {
     }
 }
 
-struct ScheduleView: View {
+struct GeneratedScheduleView: View {
     @Binding var schedule: String
     @State private var showShareSheet = false
 
@@ -275,3 +280,8 @@ struct ActivityView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+    }
+}
