@@ -17,6 +17,7 @@
 		7CA53D9A2C06BADD0082C1E5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7CA53D9C2C06BAE00082C1E5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7CA53D9F2C06BAE00082C1E5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		7CA5AFFE2C08D2BB00BB5A91 /* Schedule-Generator-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Schedule-Generator-Info.plist"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,6 +50,7 @@
 		7CA53D972C06BADD0082C1E5 /* Schedule Generator */ = {
 			isa = PBXGroup;
 			children = (
+				7CA5AFFE2C08D2BB00BB5A91 /* Schedule-Generator-Info.plist */,
 				7CA53D9A2C06BADD0082C1E5 /* ContentView.swift */,
 				7CA53D9C2C06BAE00082C1E5 /* Assets.xcassets */,
 				7CA53D9E2C06BAE00082C1E5 /* Preview Content */,
@@ -271,6 +273,8 @@
 				DEVELOPMENT_TEAM = CK3F2F6ZW3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Schedule-Generator-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = iSchedulED;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -303,6 +307,8 @@
 				DEVELOPMENT_TEAM = CK3F2F6ZW3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Schedule-Generator-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = iSchedulED;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

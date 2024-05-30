@@ -62,7 +62,7 @@ struct InfoView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 150)
-                Text("Schedule Generator")
+                Text("iSchedulED")
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .padding()
